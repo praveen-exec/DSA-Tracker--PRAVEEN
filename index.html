@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>DSA Practice Tracker</title>
+  <meta name="description" content="Track your Data Structures and Algorithms practice by topic and difficulty.">
+  <script>
+    // Apply saved theme before first paint to avoid a flash.
+    (function () {
+      try {
+        var t = localStorage.getItem('dsa-theme');
+        if (!t) t = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        document.documentElement.dataset.theme = t;
+      } catch (e) { document.documentElement.dataset.theme = 'light'; }
+    })();
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header class="bar">
+    <a class="brand" href="./">DSA Practice Tracker</a>
+
+    <nav class="tabs" aria-label="Views">
+      <button class="tab is-active" data-view="sheet" type="button">Problem sheet</button>
+      <button class="tab" data-view="admin" id="adminTab" type="button" hidden>Manage questions</button>
+    </nav>
+
+    <div class="bar-actions">
+      <button id="themeBtn" class="icon-btn" type="button" aria-label="Switch to dark theme">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+          <circle cx="12" cy="12" r="9"></circle>
+          <path d="M12 3a9 9 0 0 1 0 18z" fill="currentColor"></path>
+        </svg>
+      </button>
+      <span id="userEmail" class="user-email" hidden></span>
+      <button id="authBtn" class="btn" type="button">Sign in</button>
+    </div>
+  </header>
+
+  <main>
+    <!-- Problem sheet -->
+    <section id="sheetView" class="view" aria-labelledby="sheetTitle">
+      <div class="intro">
+        <div>
+          <h1 id="sheetTitle">Problem sheet</h1>
+          <p id="introMsg" class="muted"></p>
+        </div>
+        <dl class="stats" id="stats" aria-label="Your progress"></dl>
+      </div>
+
+      <div class="filters" role="search">
+        <label class="field grow">
+          <span class="sr-only">Search problems</span>
+          <input id="fSearch" type="search" placeholder="Search problems" autocomplete="off">
+        </label>
+        <label class="field">
+          <span class="sr-only">Topic</span>
+          <select id="fTopic"><option value="">All topics</option></select>
+        </label>
+        <label class="field">
+          <span class="sr-only">Difficulty</span>
+          <select id="fDifficulty">
+            <option value="">All difficulties</option>
+            <option value="easy">Easy</option>
+            <option value="medium">Medium</option>
+            <option value="hard">Hard</option>
+          </select>
+        </label>
+        <label class="field">
+          <span class="sr-only">Status</span>
+          <select id="fStatus">
+            <option value="">All statuses</option>
+            <option value="todo">Not solved</option>
+            <option value="done">Solved</option>
+          </select>
+        </label>
+      </div>
+
+      <div id="sheet" aria-live="polite"></div>
+    </section>
+
+    <!-- Admin panel -->
+    <section id="adminView" class="view" aria-labelledby="adminTitle" hidden>
+      <div class="intro">
+        <div>
+          <h1 id="adminTitle">Manage questions</h1>
+          <p class="muted">Changes appear on every user&apos;s sheet right away.</p>
+        </div>
+      </div>
+
+      <div class="admin-grid">
+        <form id="qForm" class="panel" autocomplete="off">
+          <h2 id="qFormTitle">Add a question</h2>
+
+          <label class="field-block">Title
+            <input id="qTitle" required maxlength="140" placeholder="Two Sum">
+          </label>
+          <label class="field-block">Link
+            <input id="qLink" type="url" required placeholder="https://leetcode.com/problems/two-sum/">
+          </label>
+          <label class="field-block">Topic
+            <input id="qTopic" list="topicList" required maxlength="60" placeholder="Arrays and Hashing">
+            <datalist id="topicList"></datalist>
+          </label>
+          <div class="two">
+            <label class="field-block">Difficulty
+              <select id="qDifficulty" required>
+                <option value="easy">Easy</option>
+                <option value="medium" selected>Medium</option>
+                <option value="hard">Hard</option>
+              </select>
+            </label>
+            <label class="field-block">Platform
+              <input id="qPlatform" maxlength="30" placeholder="LeetCode" value="LeetCode">
+            </label>
+          </div>
+
+          <div class="actions">
+            <button class="btn primary" type="submit" id="qSubmit">Add question</button>
+            <button class="btn" type="button" id="qCancel" hidden>Cancel edit</button>
+          </div>
+        </form>
+
+        <div class="panel">
+          <h2>Bulk add</h2>
+          <p class="muted small">Load a ready-made set of well-known problems, or paste a JSON array with title, link, topic, difficulty and platform. Questions whose link already exists are skipped.</p>
+          <div class="actions">
+            <button class="btn" type="button" id="seedBtn">Load starter set</button>
+          </div>
+          <label class="field-block">JSON import
+            <textarea id="importText" rows="6" spellcheck="false" placeholder='[{"title":"Two Sum","link":"https://leetcode.com/problems/two-sum/","topic":"Arrays and Hashing","difficulty":"easy","platform":"LeetCode"}]'></textarea>
+          </label>
+          <div class="actions">
+            <button class="btn" type="button" id="importBtn">Import JSON</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel list-panel">
+        <h2>All questions <span class="muted" id="qCount"></span></h2>
+        <div class="table-wrap">
+          <table class="qtable">
+            <thead>
+              <tr><th>Title</th><th>Topic</th><th>Difficulty</th><th><span class="sr-only">Actions</span></th></tr>
+            </thead>
+            <tbody id="qTable"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Sign in / create account -->
+  <dialog id="authDialog" aria-labelledby="authTitle">
+    <form id="authForm" method="dialog" novalidate>
+      <div class="dlg-head">
+        <h2 id="authTitle">Sign in</h2>
+        <button class="icon-btn" type="button" id="authClose" aria-label="Close">&times;</button>
+      </div>
+
+      <button class="btn wide" type="button" id="googleBtn">Continue with Google</button>
+      <p class="divider"><span>or use email</span></p>
+
+      <label class="field-block">Email
+        <input id="aEmail" type="email" autocomplete="email" required>
+      </label>
+      <label class="field-block">Password
+        <input id="aPassword" type="password" autocomplete="current-password" minlength="6" required>
+      </label>
+
+      <p id="authError" class="error" role="alert" hidden></p>
+
+      <button class="btn primary wide" type="submit" id="authSubmit">Sign in</button>
+
+      <p class="dlg-foot">
+        <button class="link" type="button" id="authSwitch">Create an account</button>
+        <button class="link" type="button" id="authReset">Forgot password?</button>
+      </p>
+    </form>
+  </dialog>
+
+  <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
