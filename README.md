@@ -89,7 +89,7 @@ users/{uid}/progress/{questionId}
 
 Deleting a progress document marks a problem as unsolved.
 
-#Project Images
+##Project Images
 
 **User Interface**
 <img src="user_interface.png">
